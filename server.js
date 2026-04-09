@@ -62,7 +62,7 @@ app.get('/api/stats', (req, res) => {
   }
 
   res.json({
-    name: 'Fast Trak-Defender',
+    name: 'Fast Track Defender',
     status: 'online',
     cases: allCases.length,
     activeCases: activeCases.length,
@@ -790,5 +790,5 @@ app.get('*', (req, res) => {
 // ── Start ───────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n  Fast Trak-Defender running on http://localhost:${PORT}\n`);
+  console.log(`\n  Fast Track Defender running on http://localhost:${PORT}\n`);
 });
