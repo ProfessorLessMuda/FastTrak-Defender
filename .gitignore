@@ -1,0 +1,11 @@
+node_modules/
+cases/
+data/
+01-Input/
+02-Evidence/
+03-Research/
+04-Correspondence/
+05-Exports/
+.env
+.claude/settings.local.json
+*.log
