@@ -62,7 +62,7 @@ app.get('/api/stats', (req, res) => {
   }
 
   res.json({
-    name: 'Fast Track Defender',
+    name: 'Fast Trak-Defender',
     status: 'online',
     cases: allCases.length,
     activeCases: activeCases.length,
@@ -532,6 +532,189 @@ app.get('/api/legal-reference', (req, res) => {
   ]);
 });
 
+// ── Contest Guide ───────────────────────────────────────────────────────────
+
+app.get('/api/contest-guide', (req, res) => {
+  const violationId = req.query.violationId;
+  let violation = null;
+  let computedDeadlines = null;
+  let currentStage = 1;
+
+  if (violationId) {
+    violation = violations.getById(violationId);
+    if (violation) {
+      computedDeadlines = calculateDeadlines(violation);
+      const statusMap = { active: 1, contested: 2, 'admin-review': 3, 'court-appeal': 4, resolved: 4, dismissed: 4, paid: 4 };
+      currentStage = statusMap[violation.status] || 1;
+    }
+  }
+
+  res.json({
+    currentStage,
+    stages: [
+      {
+        id: 1,
+        key: 'section-a-contest',
+        title: 'File Section A Contest',
+        subtitle: 'Written contest with explanation and evidence',
+        deadline: '30 days from notice date',
+        deadlineDays: 30,
+        legalBasis: 'CVC 40255',
+        depositRequired: false,
+        description: 'This is your first step. You are telling FasTrak you disagree with the violation and requesting an investigation. You must submit the Section A form (on the back of your violation notice) along with a written explanation and any supporting evidence. No payment or deposit is required at this stage.',
+        checklist: [
+          { item: 'Complete Section A on the back of your violation notice (or a copy)', critical: true },
+          { item: 'Write a detailed contest letter explaining your defense arguments', critical: true, appAction: 'letters' },
+          { item: 'Run defense analysis to identify your strongest arguments', critical: true, appAction: 'defenses' },
+          { item: 'Gather supporting evidence (photos, GPS data, payment receipts, witness statements)', critical: true },
+          { item: 'Make copies of EVERYTHING before sending — keep originals', critical: false },
+          { item: 'Send via certified mail with return receipt requested for proof of delivery', critical: false },
+          { item: 'Note the date you mailed it — this is your proof of timely filing', critical: false }
+        ],
+        filingMethods: true,
+        proTips: [
+          'Always send by certified mail so you have proof of delivery and the date received.',
+          'Reference specific CVC sections (40250, 40254, 40255) in your letter — it shows you know your rights.',
+          'Keep the original violation notice safe. Send copies of everything, not originals.',
+          'If the photo evidence is weak (no visible plate, wrong color car), lead with that — it is your strongest argument.',
+          'You can also file online for faster processing, but mail gives you a paper trail.'
+        ],
+        commonMistakes: [
+          'Missing the 30-day deadline — this is the #1 reason contests fail. Mark it on your calendar NOW.',
+          'Not including a written explanation — the Section A form checkbox alone is not enough.',
+          'Paying the violation before contesting — payment is treated as an admission of liability.',
+          'Sending originals instead of copies — if they lose your documents, you have no backup.',
+          'Being vague — "I didn\'t do it" is not a defense. Be specific about WHY the evidence is insufficient.'
+        ]
+      },
+      {
+        id: 2,
+        key: 'investigation-results',
+        title: 'Receive Investigation Results',
+        subtitle: 'FasTrak reviews your contest and mails their decision',
+        deadline: 'Typically 30-60 days after filing',
+        deadlineDays: null,
+        legalBasis: 'CVC 40255',
+        depositRequired: false,
+        description: 'After receiving your Section A contest, FasTrak investigates using their own records and staff, or requests the issuing agency investigate your written explanation. They will mail you the results. If your contest is denied, you have 15 days from the mailing date of the results letter to escalate to Administrative Review.',
+        checklist: [
+          { item: 'Watch your mail carefully for the investigation results letter', critical: true },
+          { item: 'Note the MAILING DATE on the results letter — the 15-day clock starts from this date', critical: true },
+          { item: 'If denied, do NOT pay — you can still escalate to Administrative Review', critical: true },
+          { item: 'If approved, confirm the violation is marked resolved and no amount is owed', critical: false },
+          { item: 'Save the results letter — you will need it for the next stage', critical: false }
+        ],
+        filingMethods: false,
+        proTips: [
+          'The results letter must clearly state the decision and your rights to request Administrative Review.',
+          'If you don\'t receive results within 90 days, call FasTrak to check status — your contest may have been lost.',
+          'A denial at this stage is common. Don\'t give up — Administrative Review is a more formal process with a neutral reviewer.'
+        ],
+        commonMistakes: [
+          'Throwing away the results letter — you need the mailing date to calculate your 15-day deadline.',
+          'Assuming a denial is final — you still have two more levels of appeal.',
+          'Waiting too long to act — the 15-day window for Administrative Review is short.'
+        ]
+      },
+      {
+        id: 3,
+        key: 'admin-review',
+        title: 'Request Administrative Review',
+        subtitle: 'Formal hearing — in person, by phone, or written submission',
+        deadline: '15 days from investigation results mailing date',
+        deadlineDays: 15,
+        legalBasis: 'CVC 40255',
+        depositRequired: true,
+        depositDetails: 'You must deposit the full violation amount (tolls + penalties). Exceptions: FasTrak account holders pay the lesser of the full amount or $250. Low-income households (≤200% of Federal Poverty Guidelines) deposit tolls only. You can request a hardship waiver if the deposit causes undue financial burden.',
+        description: 'If your initial contest was denied, you can request a formal Administrative Review. This is a hearing before an impartial reviewer designated by the toll agency. You choose the format: appear in person, by phone, or submit your position in writing. The hearing must be held within 90 calendar days of your request.',
+        checklist: [
+          { item: 'Complete the Administrative Review Request form', critical: true, appAction: 'letters-admin' },
+          { item: 'Deposit the required amount (see deposit details above)', critical: true },
+          { item: 'Choose your hearing format: in person, by phone, or written submission', critical: true },
+          { item: 'Prepare your defense arguments and organize all evidence', critical: true },
+          { item: 'If requesting a deposit waiver, submit the waiver form within the same 15-day window', critical: false },
+          { item: 'Request one continuance if needed (up to 21 additional calendar days)', critical: false }
+        ],
+        filingMethods: false,
+        proTips: [
+          'Written submission is often the best choice — you can carefully craft your arguments without the pressure of a live hearing.',
+          'The reviewer is supposed to be impartial — not the same person who denied your initial contest.',
+          'If you win, your deposit is refunded in full.',
+          'You are allowed one continuance of up to 21 days — use it if you need more time to prepare.'
+        ],
+        commonMistakes: [
+          'Missing the 15-day deadline — this is very tight. Act immediately when you receive the denial.',
+          'Forgetting the deposit — your review request will be rejected without it.',
+          'Not preparing new or stronger arguments — simply repeating your original contest is unlikely to change the outcome.',
+          'Choosing an in-person hearing without preparation — treat it like a mini-trial.'
+        ]
+      },
+      {
+        id: 4,
+        key: 'court-appeal',
+        title: 'Appeal to Superior Court',
+        subtitle: 'De novo hearing — the court starts fresh',
+        deadline: '20 days from administrative review decision',
+        deadlineDays: 20,
+        legalBasis: 'CVC 40256',
+        depositRequired: true,
+        depositDetails: '$25 filing fee (refunded if you prevail). You must serve a copy of your notice of appeal on FasTrak by first-class mail or in person.',
+        description: 'If the Administrative Review decision is not in your favor, you have the right to appeal to Superior Court. This is a "de novo" hearing — the court considers the case fresh, not bound by the toll agency\'s prior findings. The case is classified as a limited civil case. You can represent yourself (in pro per) or hire an attorney.',
+        checklist: [
+          { item: 'File Notice of Appeal with the Superior Court within 20 days', critical: true, appAction: 'letters-appeal' },
+          { item: 'Pay the $25 filing fee', critical: true },
+          { item: 'Serve a copy of the Notice of Appeal on FasTrak by mail or in person', critical: true },
+          { item: 'Prepare all evidence and legal arguments for a fresh hearing', critical: true },
+          { item: 'Consider consulting an attorney — this is a real court proceeding', critical: false },
+          { item: 'Bring all original documents and prior correspondence to court', critical: false }
+        ],
+        filingMethods: false,
+        proTips: [
+          'De novo means the court owes no deference to FasTrak\'s decision — you get a completely fresh start.',
+          'The $25 filing fee is refunded if the court rules in your favor.',
+          'Judges are generally sympathetic to individuals contesting toll violations with genuine evidence issues.',
+          'Bring organized, clearly labeled evidence — presentation matters in court.'
+        ],
+        commonMistakes: [
+          'Missing the 20-day deadline — there is no extension.',
+          'Forgetting to serve FasTrak with a copy of your appeal — this is a legal requirement.',
+          'Showing up unprepared — even though it\'s a small claims-style case, you need organized evidence.',
+          'Not having copies of all prior correspondence and decisions from earlier stages.'
+        ]
+      }
+    ],
+    filingMethods: {
+      online: { label: 'Online Portal', detail: 'bayareafastrak.org — Dispute Violation section', url: 'https://www.bayareafastrak.org/vector/violations/bataDisputeViolationEntry.do', note: 'Fastest option. Have your violation number ready.' },
+      mail: { label: 'Certified Mail', detail: 'FasTrak Violations, PO Box 26925, San Francisco, CA 94126', note: 'Best paper trail. Send certified with return receipt.' },
+      fax: { label: 'Fax', detail: '415-536-9800', note: 'Keep your fax confirmation page as proof.' },
+      inPerson: { label: 'In Person', detail: '375 Beale St., 2nd Floor, San Francisco, CA 94105', note: 'Get a stamped receipt copy.' },
+      phone: { label: 'Phone', detail: '877-BAY-TOLL (877-229-8655)', note: 'Mon-Fri 8am-6pm. Good for questions, but file in writing for a record.' }
+    },
+    firstViolationShortcut: {
+      title: 'First-Violation Shortcut — Fastest Resolution',
+      description: 'If this is your first FasTrak violation, you can resolve it without contesting by simply opening a FasTrak account before your payment due date.',
+      steps: [
+        'Go to bayareafastrak.org and open a new FasTrak account',
+        'Set your account start date to the date of your toll crossing (can backdate up to 30 days)',
+        'Penalties are automatically waived — you pay only the base toll amount',
+        'The toll is deducted from your new FasTrak account balance'
+      ],
+      legalBasis: 'CVC 40258; BATA first-violation waiver policy',
+      note: 'This is often the fastest and simplest resolution if you just want the penalties dropped. However, it means accepting the toll charge. If you believe the violation is not yours at all, contest instead.'
+    },
+    consequences: {
+      title: 'What Happens If You Don\'t Act',
+      items: [
+        { label: 'Penalty Escalation', description: 'Penalties increase with each notice. First notice: $5/crossing. Second notice: $15/crossing. After deadline: additional $10 delinquent penalty.', severity: 'moderate' },
+        { label: 'DMV Registration Hold', description: 'Unpaid violations trigger a hold on your vehicle registration renewal. You cannot renew until all violations are resolved. (CVC 4770)', severity: 'high' },
+        { label: 'Collections Agency', description: 'Unresolved violations are referred to Professional Account Management, LLC (866-424-9136). This may appear on your credit report.', severity: 'high' }
+      ]
+    },
+    violation,
+    computedDeadlines
+  });
+});
+
 // ── Seed / Initialize ───────────────────────────────────────────────────────
 
 app.post('/api/seed', (req, res) => {
@@ -607,5 +790,5 @@ app.get('*', (req, res) => {
 // ── Start ───────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n  Fast Track Defender running on http://localhost:${PORT}\n`);
+  console.log(`\n  Fast Trak-Defender running on http://localhost:${PORT}\n`);
 });

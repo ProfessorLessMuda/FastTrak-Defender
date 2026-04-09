@@ -297,10 +297,121 @@ body {
 .status-badge.dismissed { background: rgba(167,139,250,0.15); color: var(--violet); }
 .status-badge.paid { background: rgba(90,100,128,0.15); color: var(--text-muted); }
 
+/* ── Contest Guide Stepper ────────────────────────────────────────────── */
+.contest-stepper {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 28px; padding: 0 8px; position: relative;
+}
+.contest-step {
+  display: flex; flex-direction: column; align-items: center; flex: 1;
+  position: relative; z-index: 1;
+}
+.contest-step .step-number {
+  width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 18px;
+  border: 2px solid var(--border); background: var(--bg); color: var(--text-muted);
+  transition: all 0.3s;
+}
+.contest-step.active .step-number { border-color: var(--amber); background: rgba(251,191,36,0.15); color: var(--amber); box-shadow: 0 0 16px rgba(251,191,36,0.2); }
+.contest-step.completed .step-number { border-color: var(--mint); background: rgba(52,211,153,0.15); color: var(--mint); }
+.contest-step .step-title {
+  font-family: var(--font-display); font-size: 12px; font-weight: 600;
+  text-align: center; margin-top: 8px; color: var(--text-muted); max-width: 120px;
+}
+.contest-step.active .step-title { color: var(--amber); }
+.contest-step.completed .step-title { color: var(--mint); }
+.contest-step .step-deadline { font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 2px; }
+.contest-step-connector {
+  position: absolute; top: 22px; left: 0; right: 0; height: 2px; background: var(--border); z-index: 0;
+}
+.contest-step-connector .filled { height: 100%; background: var(--mint); transition: width 0.3s; }
+
+/* ── Contest Guide Cards ─────────────────────────────────────────────── */
+.stage-card { border-left: 4px solid var(--border); padding-left: 16px; }
+.stage-card.current { border-left-color: var(--amber); }
+.stage-card.completed-stage { border-left-color: var(--mint); }
+
+/* ── Checklist ───────────────────────────────────────────────────────── */
+.contest-checklist { list-style: none; padding: 0; margin: 12px 0; }
+.contest-checklist-item {
+  display: flex; align-items: flex-start; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.contest-checklist-item:last-child { border-bottom: none; }
+.contest-checklist-item input[type="checkbox"] {
+  appearance: none; width: 18px; height: 18px; min-width: 18px; border-radius: 4px;
+  border: 2px solid var(--border); background: var(--bg-card); cursor: pointer;
+  margin-top: 1px; transition: all 0.2s;
+}
+.contest-checklist-item input[type="checkbox"]:checked {
+  background: var(--mint); border-color: var(--mint);
+}
+.contest-checklist-item input[type="checkbox"]:checked::after {
+  content: '✓'; display: block; text-align: center; color: var(--bg);
+  font-size: 12px; font-weight: 700; line-height: 14px;
+}
+.contest-checklist-item.critical { color: var(--text); }
+.contest-checklist-item.critical::before {
+  content: ''; display: none;
+}
+.contest-checklist-item .critical-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px;
+  font-weight: 700; text-transform: uppercase; background: rgba(251,191,36,0.15);
+  color: var(--amber); letter-spacing: 0.5px; white-space: nowrap;
+}
+
+/* ── Callout Boxes ───────────────────────────────────────────────────── */
+.callout {
+  border-left: 4px solid var(--border); background: var(--bg-card);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 14px 16px; margin: 12px 0;
+}
+.callout-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.callout.tip { border-left-color: var(--mint); }
+.callout.tip .callout-title { color: var(--mint); }
+.callout.warning { border-left-color: var(--red); }
+.callout.warning .callout-title { color: var(--red); }
+.callout.shortcut {
+  border-left-color: var(--amber); background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.2); border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+}
+.callout.shortcut .callout-title { color: var(--amber); }
+.callout ul { padding-left: 18px; margin: 6px 0 0; }
+.callout li { font-size: 13px; color: var(--text-sub); margin-bottom: 4px; line-height: 1.5; }
+
+/* ── Filing Methods ──────────────────────────────────────────────────── */
+.filing-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0; }
+.filing-method {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 14px; transition: all 0.2s;
+}
+.filing-method:hover { border-color: var(--border-hover); }
+.filing-method-icon { font-size: 20px; margin-bottom: 6px; }
+.filing-method-label { font-family: var(--font-display); font-size: 13px; font-weight: 600; }
+.filing-method-detail { font-size: 12px; color: var(--text-sub); margin-top: 2px; word-break: break-word; }
+.filing-method-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
+
+/* ── Consequence Cards ───────────────────────────────────────────────── */
+.consequence-item {
+  display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.consequence-item:last-child { border-bottom: none; }
+.consequence-severity {
+  width: 8px; min-width: 8px; border-radius: 4px; align-self: stretch;
+}
+.consequence-severity.high { background: var(--red); }
+.consequence-severity.moderate { background: var(--amber); }
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .header { flex-wrap: wrap; }
   .nav { margin-left: 0; width: 100%; overflow-x: auto; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .contest-stepper { flex-direction: column; gap: 12px; }
+  .contest-step { flex-direction: row; gap: 12px; }
+  .contest-step .step-title { text-align: left; max-width: none; margin-top: 0; }
+  .contest-step-connector { display: none; }
+  .filing-methods { grid-template-columns: 1fr; }
 }

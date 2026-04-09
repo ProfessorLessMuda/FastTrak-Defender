@@ -74,6 +74,7 @@ async function loadView(view) {
     case 'letters': return renderLetters();
     case 'timeline': return renderTimeline();
     case 'legal-ref': return renderLegalRef();
+    case 'contest-guide': return renderContestGuide();
   }
 }
 
@@ -571,6 +572,215 @@ async function renderLegalRef() {
   });
 
   el.innerHTML = html;
+}
+
+// ── Contest Guide ───────────────────────────────────────────────────────
+
+async function renderContestGuide() {
+  const el = document.getElementById('view-contest-guide');
+
+  // Get violations for selector
+  const vols = state.selectedCaseId
+    ? await api(`/api/violations?caseId=${state.selectedCaseId}`)
+    : await api('/api/violations');
+
+  const selectedViolationId = vols.length > 0 ? vols[0].id : null;
+  const guideUrl = selectedViolationId
+    ? `/api/contest-guide?violationId=${selectedViolationId}`
+    : '/api/contest-guide';
+  const guide = await api(guideUrl);
+
+  let html = '<div class="section-header">Contest Guide</div>';
+  html += '<div class="section-sub">Step-by-step process to contest your FasTrak toll violation</div>';
+
+  // Violation selector
+  if (vols.length > 0) {
+    html += `<div class="form-group" style="max-width:400px;margin-bottom:20px">
+      <label class="form-label">Violation</label>
+      <select class="form-select" id="guideViolationSelect" onchange="reloadGuide(this.value)">
+        ${vols.map(v => `<option value="${v.id}" ${v.id === selectedViolationId ? 'selected' : ''}>${v.violationNumber} — ${v.location || ''}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+
+  // Stepper
+  html += renderStepper(guide.stages, guide.currentStage);
+
+  // First-violation shortcut banner
+  if (guide.firstViolationShortcut) {
+    const sc = guide.firstViolationShortcut;
+    html += `<div class="callout shortcut">
+      <div class="callout-title">${esc(sc.title)}</div>
+      <p style="font-size:13px;color:var(--text-sub);margin:6px 0">${esc(sc.description)}</p>
+      <ol style="padding-left:20px;margin:8px 0">${sc.steps.map(s => `<li style="font-size:13px;color:var(--text-sub);margin-bottom:4px">${esc(s)}</li>`).join('')}</ol>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${esc(sc.legalBasis)}</div>
+      <div style="font-size:12px;color:var(--amber);margin-top:6px;font-style:italic">${esc(sc.note)}</div>
+    </div>`;
+  }
+
+  // Computed deadlines for selected violation
+  if (guide.computedDeadlines && guide.violation) {
+    const actionable = guide.computedDeadlines.filter(d => d.daysLeft !== null && d.daysLeft >= 0);
+    if (actionable.length > 0) {
+      html += '<div class="card" style="margin-bottom:20px"><div class="card-title">Your Deadlines</div>';
+      actionable.forEach(d => {
+        const color = d.daysLeft <= 5 ? 'var(--red)' : d.daysLeft <= 14 ? 'var(--amber)' : 'var(--text-sub)';
+        html += `<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-family:var(--font-mono);font-weight:700;color:${color};min-width:45px">${d.daysLeft}d</span>
+          <div><div style="font-weight:500">${esc(d.label)}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${esc(d.description || '')}</div></div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+  }
+
+  // Stage detail cards
+  guide.stages.forEach(stage => {
+    const isCurrent = stage.id === guide.currentStage;
+    const isCompleted = stage.id < guide.currentStage;
+    const stateClass = isCurrent ? 'current' : isCompleted ? 'completed-stage' : '';
+
+    if (isCurrent) {
+      // Current stage: expanded card
+      html += `<div class="card stage-card ${stateClass}">`;
+      html += renderStageContent(stage, guide, true);
+      html += '</div>';
+    } else {
+      // Other stages: collapsible
+      html += `<details class="legal-section" style="margin-bottom:12px" ${isCompleted ? '' : ''}>
+        <summary><span style="color:${isCompleted ? 'var(--mint)' : 'var(--text-muted)'}">${esc(stage.title)}</span> <span style="font-size:12px;color:var(--text-muted);font-weight:400;margin-left:8px">${esc(stage.deadline)}</span></summary>
+        <div class="legal-body stage-card ${stateClass}" style="padding:16px">${renderStageContent(stage, guide, false)}</div>
+      </details>`;
+    }
+  });
+
+  // Filing methods
+  if (guide.filingMethods) {
+    html += '<div class="card"><div class="card-title">How to File</div>';
+    html += '<div class="section-sub">All available methods for submitting your contest</div>';
+    html += '<div class="filing-methods">';
+    const icons = { online: '🌐', mail: '✉️', fax: '📠', inPerson: '🏢', phone: '📞' };
+    Object.entries(guide.filingMethods).forEach(([key, m]) => {
+      html += `<div class="filing-method">
+        <div class="filing-method-icon">${icons[key] || '📋'}</div>
+        <div class="filing-method-label">${esc(m.label)}</div>
+        <div class="filing-method-detail">${esc(m.detail)}</div>
+        <div class="filing-method-note">${esc(m.note)}</div>
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Consequences
+  if (guide.consequences) {
+    html += `<div class="card" style="border-color:rgba(239,68,68,0.3)">
+      <div class="card-title" style="color:var(--red)">${esc(guide.consequences.title)}</div>`;
+    guide.consequences.items.forEach(c => {
+      html += `<div class="consequence-item">
+        <div class="consequence-severity ${c.severity}"></div>
+        <div><div style="font-weight:600">${esc(c.label)}</div>
+        <div style="font-size:13px;color:var(--text-sub)">${esc(c.description)}</div></div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function renderStepper(stages, currentStage) {
+  const filledPct = Math.max(0, ((currentStage - 1) / (stages.length - 1)) * 100);
+  let html = '<div class="contest-stepper">';
+  html += `<div class="contest-step-connector"><div class="filled" style="width:${filledPct}%"></div></div>`;
+  stages.forEach(s => {
+    const cls = s.id === currentStage ? 'active' : s.id < currentStage ? 'completed' : '';
+    html += `<div class="contest-step ${cls}">
+      <div class="step-number">${s.id < currentStage ? '✓' : s.id}</div>
+      <div class="step-title">${esc(s.title)}</div>
+      <div class="step-deadline">${esc(s.deadline)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderStageContent(stage, guide, isCurrent) {
+  let html = '';
+  if (isCurrent) {
+    html += `<div class="card-title">${esc(stage.title)}</div>`;
+    html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <span class="legal-deadline">${esc(stage.legalBasis)}</span>
+      <span class="legal-deadline" style="background:rgba(251,191,36,0.1);color:var(--amber)">${esc(stage.deadline)}</span>
+      ${stage.depositRequired ? '<span class="legal-deadline" style="background:rgba(239,68,68,0.1);color:var(--red)">Deposit Required</span>' : '<span class="legal-deadline" style="background:rgba(52,211,153,0.1);color:var(--mint)">No Deposit</span>'}
+    </div>`;
+  }
+
+  html += `<p style="font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:16px">${esc(stage.description)}</p>`;
+
+  if (stage.depositRequired && stage.depositDetails) {
+    html += `<div class="callout warning" style="margin-bottom:12px">
+      <div class="callout-title">Deposit Requirement</div>
+      <p style="font-size:13px;color:var(--text-sub)">${esc(stage.depositDetails)}</p>
+    </div>`;
+  }
+
+  // Checklist
+  html += '<div style="font-family:var(--font-display);font-size:14px;font-weight:600;margin-bottom:8px">Checklist</div>';
+  html += '<div class="contest-checklist">';
+  stage.checklist.forEach((c, i) => {
+    html += `<div class="contest-checklist-item ${c.critical ? 'critical' : ''}">
+      <input type="checkbox" id="chk-${stage.id}-${i}">
+      <label for="chk-${stage.id}-${i}" style="flex:1;cursor:pointer">
+        ${c.critical ? '<span class="critical-badge">Required</span> ' : ''}${esc(c.item)}
+        ${c.appAction ? ` <button class="btn btn-sm btn-primary" style="margin-left:8px" onclick="guideAction('${c.appAction}')">${actionLabel(c.appAction)}</button>` : ''}
+      </label>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Pro tips
+  if (stage.proTips && stage.proTips.length > 0) {
+    html += `<div class="callout tip">
+      <div class="callout-title">Pro Tips</div>
+      <ul>${stage.proTips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  // Common mistakes
+  if (stage.commonMistakes && stage.commonMistakes.length > 0) {
+    html += `<div class="callout warning">
+      <div class="callout-title">Common Mistakes to Avoid</div>
+      <ul>${stage.commonMistakes.map(m => `<li>${esc(m)}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  return html;
+}
+
+function actionLabel(action) {
+  const labels = { letters: 'Generate Letter', defenses: 'Run Analysis', 'letters-admin': 'Generate Request', 'letters-appeal': 'Generate Appeal' };
+  return labels[action] || action;
+}
+
+function guideAction(action) {
+  if (action === 'letters' || action === 'letters-admin' || action === 'letters-appeal') {
+    switchView('letters');
+  } else if (action === 'defenses') {
+    switchView('defenses');
+  }
+}
+
+async function reloadGuide(violationId) {
+  // Re-render with new violation selected
+  const el = document.getElementById('view-contest-guide');
+  const guide = await api(`/api/contest-guide?violationId=${violationId}`);
+  const vols = state.selectedCaseId
+    ? await api(`/api/violations?caseId=${state.selectedCaseId}`)
+    : await api('/api/violations');
+
+  // Rebuild just the guide content (keep violation selector)
+  renderContestGuide();
 }
 
 // ── File Tree ───────────────────────────────────────────────────────────
