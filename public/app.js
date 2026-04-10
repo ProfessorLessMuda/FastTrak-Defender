@@ -88,17 +88,29 @@ async function renderDashboard() {
   let html = '<div class="section-header">Dashboard</div>';
   html += '<div class="section-sub">Overview of all active cases and upcoming deadlines</div>';
 
-  // Deadline banner
-  const urgent = data.deadlineAlerts.find(d => d.daysLeft <= 14);
-  if (urgent) {
-    const cls = urgent.daysLeft <= 5 ? '' : 'urgent';
-    html += `<div class="deadline-banner ${cls}">
-      <div class="countdown">${urgent.daysLeft}d</div>
+  // Status banner — check if any cases are contested (awaiting results)
+  const contestedCases = (data.cases || []).filter(c => c.status === 'contested');
+  if (contestedCases.length > 0) {
+    html += `<div class="deadline-banner urgent" style="border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.1)">
+      <div class="countdown" style="color:var(--mint)">&#10003;</div>
       <div class="detail">
-        <div class="detail-label">${urgent.label}</div>
-        <div class="detail-sub">${urgent.description || ''} ${urgent.violationNumber ? '(' + urgent.violationNumber + ')' : ''}</div>
+        <div class="detail-label">Dispute Filed — Awaiting Response</div>
+        <div class="detail-sub">Your contest has been submitted. FasTrak will respond within 5 business days. Watch your mail for investigation results.</div>
       </div>
     </div>`;
+  } else {
+    // Deadline banner for non-contested cases
+    const urgent = data.deadlineAlerts.find(d => d.daysLeft !== null && d.daysLeft <= 14);
+    if (urgent) {
+      const cls = urgent.daysLeft <= 5 ? '' : 'urgent';
+      html += `<div class="deadline-banner ${cls}">
+        <div class="countdown">${urgent.daysLeft}d</div>
+        <div class="detail">
+          <div class="detail-label">${urgent.label}</div>
+          <div class="detail-sub">${urgent.description || ''} ${urgent.violationNumber ? '(' + urgent.violationNumber + ')' : ''}</div>
+        </div>
+      </div>`;
+    }
   }
 
   // Stats
