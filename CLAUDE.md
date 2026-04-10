@@ -1,4 +1,4 @@
-# Fast Trak Defender — Toll Violation Defense Platform
+# FasTrak Defender — Toll Violation Defense Platform
 
 ## Purpose
 Scalable, multi-case platform for contesting California FasTrak toll evasion violations. Analyzes evidence, generates defense strategies, and produces dispute letters with legal citations. Built for personal use and future GitHub/SaaS release.

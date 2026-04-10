@@ -1,7 +1,7 @@
 {
-  "name": "fast-trak-defender",
+  "name": "fastrak-defender",
   "version": "1.0.0",
-  "description": "Fast Trak Defender — Toll violation defense platform. Analyze evidence, build defense strategies, generate dispute letters.",
+  "description": "FasTrak Defender — Toll violation defense platform. Analyze evidence, build defense strategies, generate dispute letters.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

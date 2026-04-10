@@ -1,4 +1,4 @@
-# Fast Trak Defender
+# FasTrak Defender
 
 **Toll violation defense platform for California FasTrak violations.**
 
